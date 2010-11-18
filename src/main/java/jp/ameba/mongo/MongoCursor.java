@@ -57,8 +57,14 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 		if (finished || closed) {
 			return false;
 		}
+		if (lastResult == null) {
+			lastResult= client.query(query);
+			if (lastResult.getNumberReturned() == 0) {
+				return false;
+			}
+		}
 		List<BSONObject> documents = lastResult.getDocuments();
-		if (documents == null || indexInResult > documents.size()) {
+		if (documents == null || indexInResult >= documents.size()) {
 			lastResult = client.getMore(new GetMore(
 					query.getDatabaseName(),
 					query.getCollectionName(),

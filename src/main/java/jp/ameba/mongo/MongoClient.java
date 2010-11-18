@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jp.ameba.mogo.protocol.Delete;
@@ -54,9 +55,6 @@ public class MongoClient {
 	
 	// 初期接続先アドレス一覧
 	private List<InetSocketAddress> serverAddresses;
-	
-	// 接続タイムアウト（ミリ秒）
-	private long connectTimeout = 10000L;
 	
 	// ラウンドロビン用
 	private AtomicInteger roundRobinCounter;
@@ -114,45 +112,130 @@ public class MongoClient {
 	}
 	
 	/**
-	 * 接続オープンを実施します。
-	 * 接続は一定時間のタイムアウトを元に実施され、
-	 * １つでも接続が成功した時点で返却されます。
+	 * MongoDB へ接続します。
 	 */
 	public void open() {
-		ChannelFutureListener channelFutureListener = new ConnectChannelFutureListener();
+		MongoFuture future = openAsync();
+		try {
+			future.await(clientContext.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
+		} catch (InterruptedException ex) {
+		}
+		if (!future.isSuccess()) {
+			throw new MongoException("No available MongoDB servers.");
+		}
+	}
+	
+	/**
+	 * 非同期処理で MongoDB へ接続します。
+	 * @return
+	 */
+	public MongoFuture openAsync() {
+		
+		MongoFuture mongoFuture = new MongoFuture();
+		OpenChannelFutureListener channelFutureListener = new OpenChannelFutureListener(mongoFuture);
 		synchronized (channelFutureListener) {
 			for (InetSocketAddress address : serverAddresses) {
 				ClientBootstrap bootstrap = new ClientBootstrap(channelFactory);
 				bootstrap.setPipelineFactory(new MongoPipelineFactory(clientContext));
 				ChannelFuture channelFuture = bootstrap.connect(address);
 				channelFuture.getChannel().getConfig().setBufferFactory(channelBufferFactory);
+				channelFutureListener.tryCount++;
 				channelFuture.addListener(channelFutureListener);
 			}
-			try {
-				channelFutureListener.wait(connectTimeout);
-			} catch (InterruptedException ex) {
+		}
+		return mongoFuture;
+		
+	}
+	
+	/**
+	 * MongoDB への接続を閉じます。
+	 */
+	public void close() {
+		MongoFuture future = closeAsync();
+		try {
+			future.await(clientContext.getConfig().getOperationTimeout(), TimeUnit.MILLISECONDS);
+		} catch (InterruptedException ex) {
+		}
+		if (!future.isSuccess()) {
+			throw new MongoException("Failed to close connections");
+		}
+	}
+	
+	/**
+	 * 非同期処理で MongoDB への接続を閉じます。
+	 * @return
+	 */
+	public MongoFuture closeAsync() {
+		MongoFuture mongoFuture = new MongoFuture();
+		// 接続中クライアントが存在しない場合は、そのまま返却
+		if (liveClients.size() == 0) {
+			mongoFuture.setSuccess(true);
+			return mongoFuture;
+		}
+		CloseChannelFutureListener channelFutureListener = new CloseChannelFutureListener(mongoFuture);
+		synchronized (channelFutureListener) {
+			for (Channel channel : liveClients) {
+				channelFutureListener.tryCount++;
+				ChannelFuture future = channel.close();
+				future.addListener(channelFutureListener);
 			}
 		}
-		if (liveClients.size() == 0) {
-			throw new MongoException("No available MongoDB servers.");
-		}
+		return mongoFuture;
 	}
 	
 	/**
 	 * 接続完了処理のための非同期リスナ
 	 */
-	private class ConnectChannelFutureListener implements ChannelFutureListener {
+	private class OpenChannelFutureListener implements ChannelFutureListener {
+		private int tryCount = 0;
+		private MongoFuture mongoFuture;
+		public OpenChannelFutureListener(MongoFuture mongoFuture) {
+			this.mongoFuture = mongoFuture;
+		}
 		public synchronized void operationComplete(ChannelFuture channelFuture) throws Exception {
 			if (channelFuture.isSuccess()) {
 				// 接続に成功した場合は、アクティブ一覧へ追加
 				liveClients.add(channelFuture.getChannel());
-				// 成功した場合は notifyAll で待ち受け中のクライアントに通知
-				notifyAll();
 			} else {
 				// 接続に失敗した場合は、被アクティブ一覧に追加
 				deadClients.add(channelFuture.getChannel());
 			}
+			if (--tryCount <= 0) {
+				if (liveClients.size() > 0) {
+					// １つでも接続に成功していれば、成功とみなす
+					mongoFuture.setSuccess(true);
+				}
+				// 待ち受けスレッドへ通知
+				notifyAll();
+			}
 		};
+	}
+	
+	/**
+	 * 切断処理のための非同期リスナ
+	 * @author suguru
+	 */
+	private class CloseChannelFutureListener implements ChannelFutureListener {
+		private int tryCount = 0;
+		private MongoFuture mongoFuture;
+		public CloseChannelFutureListener(MongoFuture mongoFuture) {
+			this.mongoFuture = mongoFuture;
+		}
+		@Override
+		public synchronized void operationComplete(ChannelFuture channelFuture) throws Exception {
+			if (channelFuture.isSuccess()) {
+				liveClients.remove(channelFuture.getChannel());
+			} else {
+			}
+			if (--tryCount <= 0) {
+				// アクティブな接続が存在しなくなっていれば、成功とみなす
+				if (liveClients.size() == 0) {
+					mongoFuture.setSuccess(true);
+				}
+				// 待ち受けスレッドへ通知
+				notifyAll();
+			}
+		}
 	}
 	
 	/**
@@ -209,6 +292,15 @@ public class MongoClient {
 	 */
 	public Response getMore(GetMore getMore) {
 		return sendQueryRequest(getMore);
+	}
+	
+	/**
+	 * カーソルを取得します。
+	 * @param query
+	 * @return
+	 */
+	public MongoCursor cursor(Query query) {
+		return new MongoCursor(this, query, query(query));
 	}
 	
 	/**

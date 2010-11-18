@@ -21,13 +21,19 @@ public class MongoClientTest {
 		MongoClient client = new MongoClient();
 		client.setHosts("127.0.0.1");
 		client.open();
-		
 		Assert.assertTrue(client.isOpen());
+		client.close();
+		Assert.assertFalse(client.isOpen());
 	}
 	
 	@Test
 	public void testInsert() throws Exception {
 		
+		MongoClient client = new MongoClient();
+		client.setHosts("127.0.0.1");
+		client.open();
+		
+		client.close();
 	}
 	
 	@Test
@@ -57,5 +63,16 @@ public class MongoClientTest {
 		Assert.assertEquals("test-name", resultObject.get("name"));
 		Assert.assertEquals(100, resultObject.get("num"));
 		
+		client.close();
+		
 	}
+	
+	@Test
+	public void testDelete() throws Exception {
+	}
+	
+	@Test
+	public void testQuery() throws Exception {
+	}
+	
 }
