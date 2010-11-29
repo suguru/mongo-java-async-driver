@@ -2,6 +2,7 @@ package jp.ameba.mogo.protocol;
 
 import org.bson.BSONEncoder;
 import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
 
 /**
  * OP_QUERY リクエストメッセージ
@@ -25,6 +26,16 @@ public class Query extends Request {
 			String collectionName,
 			int numberToSkip,
 			int numberToReturn,
+			BSONObject query) {
+		this(databaseName, collectionName, numberToSkip, numberToReturn, query, null);
+	}
+			
+	
+	public Query(
+			String databaseName,
+			String collectionName,
+			int numberToSkip,
+			int numberToReturn,
 			BSONObject query,
 			BSONObject returnFieldSelector) {
 		super(OperationCode.OP_QUERY, databaseName, collectionName);
@@ -32,14 +43,9 @@ public class Query extends Request {
 		this.numberToReturn = numberToReturn;
 		this.query = query;
 		this.returnFieldSelector = returnFieldSelector;
-		this.safeLevel = SafeLevel.NONE;
+		this.consistency = Consistency.NONE;
 	}
 	
-	/**
-	 * 
-	 * @param tailable
-	 * @return
-	 */
 	public Query setTailableCursor(boolean tailable) {
 		this.flags = BitWise.addBit(flags, 1);
 		return this;
@@ -67,6 +73,29 @@ public class Query extends Request {
 	
 	public Query setExhaust(boolean exhaust) {
 		this.flags = BitWise.addBit(flags, 6);
+		return this;
+	}
+	
+	public Query setNumberToReturn(int numberToReturn) {
+		this.numberToReturn = numberToReturn;
+		return this;
+	}
+	
+	public Query setNumberToSkip(int numberToSkip) {
+		this.numberToSkip = numberToSkip;
+		return this;
+	}
+	
+	public Query addQuery(String key, Object value) {
+		this.query.put(key, value);
+		return this;
+	}
+	
+	public Query addReturnField(String key) {
+		if (returnFieldSelector == null) {
+			returnFieldSelector = new BasicBSONObject();
+		}
+		returnFieldSelector.put(key, 1);
 		return this;
 	}
 	

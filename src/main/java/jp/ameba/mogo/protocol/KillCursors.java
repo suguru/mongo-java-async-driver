@@ -24,7 +24,7 @@ public class KillCursors extends Request {
 	public KillCursors(long ... cursorIds) {
 		super(OperationCode.OP_KILL_CURSORS, null, null);
 		this.cursorIds = cursorIds;
-		this.safeLevel = SafeLevel.NONE;
+		this.consistency = Consistency.NONE;
 	}
 
 	@Override

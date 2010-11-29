@@ -6,24 +6,31 @@ public class MongoException extends RuntimeException {
 	 * 
 	 */
 	private static final long serialVersionUID = -3377532781644839529L;
+	
+	private int code;
 
 	public MongoException() {
-		// TODO Auto-generated constructor stub
 	}
 
-	public MongoException(String arg0) {
-		super(arg0);
-		// TODO Auto-generated constructor stub
+	public MongoException(String message) {
+		super(message);
+	}
+	
+	public MongoException(String message, int code) {
+		super(message);
+		this.code = code;
 	}
 
-	public MongoException(Throwable arg0) {
-		super(arg0);
-		// TODO Auto-generated constructor stub
+	public MongoException(Throwable cause) {
+		super(cause);
 	}
 
-	public MongoException(String arg0, Throwable arg1) {
-		super(arg0, arg1);
-		// TODO Auto-generated constructor stub
+	public MongoException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public int getCode() {
+		return code;
 	}
 
 }

@@ -29,7 +29,7 @@ public class Delete extends Request {
 			BSONObject selector) {
 		super(OperationCode.OP_DELETE, databaseName, collectionName);
 		this.selector = selector;
-		this.safeLevel = SafeLevel.SAFE;
+		this.consistency = Consistency.SAFE;
 	}
 	
 	/**
@@ -45,13 +45,13 @@ public class Delete extends Request {
 	}
 
 	/**
-	 * 更新における {@link SafeLevel} を設定します。
+	 * 更新における {@link Consistency} を設定します。
 	 * 
 	 * @param safeLevel
 	 * @return
 	 */
-	public Delete safeLevel(SafeLevel safeLevel) {
-		setSafeLevel(safeLevel);
+	public Delete consistency(Consistency consistency) {
+		setConsistency(consistency);
 		return this;
 	}
 

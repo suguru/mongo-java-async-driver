@@ -32,10 +32,10 @@ public class MongoFuture {
 	}
 	
 	public void await(long timeout, TimeUnit unit) throws InterruptedException {
-		if (success) {
-			return;
-		}
 		synchronized (this) {
+			if (success) {
+				return;
+			}
 			wait(unit.toMillis(timeout));
 		}
 	}

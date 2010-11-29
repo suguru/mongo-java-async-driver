@@ -86,7 +86,7 @@ public class MongoClientHandler extends SimpleChannelHandler {
 			
 			// Safeリクエストの場合は、 getLastError クエリを付加
 			Request getLastError = null;
-			BSONObject query = message.getSafeLevel().getLastErrorQuery();
+			BSONObject query = message.getConsistency().getLastErrorQuery();
 			if (query != null) {
 				getLastError = new Query(
 						message.getDatabaseName(),

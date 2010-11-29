@@ -20,7 +20,7 @@ import jp.ameba.mogo.protocol.Query;
 import jp.ameba.mogo.protocol.Request;
 import jp.ameba.mogo.protocol.RequestFuture;
 import jp.ameba.mogo.protocol.Response;
-import jp.ameba.mogo.protocol.SafeLevel;
+import jp.ameba.mogo.protocol.Consistency;
 import jp.ameba.mogo.protocol.Update;
 
 import org.bson.BSONObject;
@@ -55,10 +55,8 @@ public class MongoClient {
 	
 	// 初期接続先アドレス一覧
 	private List<InetSocketAddress> serverAddresses;
-	
 	// ラウンドロビン用
 	private AtomicInteger roundRobinCounter;
-	
 	// クライアント設定
 	private MongoClientContext clientContext;
 	
@@ -139,8 +137,8 @@ public class MongoClient {
 				bootstrap.setPipelineFactory(new MongoPipelineFactory(clientContext));
 				ChannelFuture channelFuture = bootstrap.connect(address);
 				channelFuture.getChannel().getConfig().setBufferFactory(channelBufferFactory);
-				channelFutureListener.tryCount++;
 				channelFuture.addListener(channelFutureListener);
+				channelFutureListener.tryCount++;
 			}
 		}
 		return mongoFuture;
@@ -174,7 +172,8 @@ public class MongoClient {
 		}
 		CloseChannelFutureListener channelFutureListener = new CloseChannelFutureListener(mongoFuture);
 		synchronized (channelFutureListener) {
-			for (Channel channel : liveClients) {
+			List<Channel> clients = new ArrayList<Channel>(liveClients);
+			for (Channel channel : clients) {
 				channelFutureListener.tryCount++;
 				ChannelFuture future = channel.close();
 				future.addListener(channelFutureListener);
@@ -206,7 +205,9 @@ public class MongoClient {
 					mongoFuture.setSuccess(true);
 				}
 				// 待ち受けスレッドへ通知
-				notifyAll();
+				synchronized (mongoFuture) {
+					mongoFuture.notifyAll();
+				}
 			}
 		};
 	}
@@ -223,17 +224,21 @@ public class MongoClient {
 		}
 		@Override
 		public synchronized void operationComplete(ChannelFuture channelFuture) throws Exception {
-			if (channelFuture.isSuccess()) {
-				liveClients.remove(channelFuture.getChannel());
-			} else {
-			}
-			if (--tryCount <= 0) {
-				// アクティブな接続が存在しなくなっていれば、成功とみなす
-				if (liveClients.size() == 0) {
-					mongoFuture.setSuccess(true);
+			synchronized (this) {
+				if (channelFuture.isSuccess()) {
+					liveClients.remove(channelFuture.getChannel());
+				} else {
 				}
-				// 待ち受けスレッドへ通知
-				notifyAll();
+				if (--tryCount <= 0) {
+					// アクティブな接続が存在しなくなっていれば、成功とみなす
+					if (liveClients.size() == 0) {
+						mongoFuture.setSuccess(true);
+					}
+					// 待ち受けスレッドへ通知
+					synchronized (mongoFuture) {
+						mongoFuture.notifyAll();
+					}
+				}
 			}
 		}
 	}
@@ -254,7 +259,7 @@ public class MongoClient {
 	 * @param update
 	 * @param upsert
 	 * @param multiUpdate
-	 * @param safeLevel
+	 * @param consistency
 	 */
 	public void update(Update update) {
 		sendUpdateRequest(update);
@@ -299,8 +304,8 @@ public class MongoClient {
 	 * @param query
 	 * @return
 	 */
-	public MongoCursor cursor(Query query) {
-		return new MongoCursor(this, query, query(query));
+	public MongoCursor cursor(String databaseName, String collectionName) {
+		return new MongoCursor(this, databaseName, collectionName);
 	}
 	
 	/**
@@ -313,7 +318,7 @@ public class MongoClient {
 	
 	/**
 	 * 更新系リクエストを送信します。
-	 * {@link SafeLevel} の状況によって、サーバーからの
+	 * {@link Consistency} の状況によって、サーバーからの
 	 * 返却までの間、処理をブロックします。
 	 * 
 	 * @param request
@@ -321,8 +326,8 @@ public class MongoClient {
 	private void sendUpdateRequest(Request request) {
 		Channel channel = getLiveChannel();
 		channel.write(request);
-		SafeLevel safeLevel = request.getSafeLevel();
-		BSONObject getErrorQuery = safeLevel.getLastErrorQuery();
+		Consistency consistency = request.getConsistency();
+		BSONObject getErrorQuery = consistency.getLastErrorQuery();
 		if (getErrorQuery != null) {
 			waitLastError(request);
 		}
@@ -366,10 +371,21 @@ public class MongoClient {
 				Response response = requestFuture.get();
 				BSONObject object = response.getDocuments().get(0);
 				// OK でない場合は、例外を発する
-				Number ok = (Number) object.get("ok");
-				if (ok.intValue() != 1) {
+				Object ok = object.get("ok");
+				boolean isOk = false;
+				if (ok.getClass() == Boolean.class) {
+					isOk = (Boolean) ok;
+				} else if (ok instanceof Number) {
+					isOk = ((Number) object.get("ok")).intValue() == 1;
+				}
+				if (!isOk) {
 					String error = (String) object.get("errmsg");
-					throw new MongoException("Operation failed. Error:" + error);
+					throw new MongoException(error);
+				}
+				String err = (String) object.get("err");
+				if (err != null) {
+					Integer code = (Integer) object.get("code");
+					throw new MongoException(err, code);
 				}
 			} catch (ExecutionException ex) {
 				throw new MongoException(ex);

@@ -3,7 +3,7 @@ package jp.ameba.mogo.protocol;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 
-public enum SafeLevel {
+public enum Consistency {
 
 	NONE(null),
 	SAFE(new BasicBSONObject("getlasterror", 1)),
@@ -14,7 +14,7 @@ public enum SafeLevel {
 	
 	private BSONObject getLastError;
 
-	private SafeLevel(BSONObject object) {
+	private Consistency(BSONObject object) {
 		this.getLastError = object;
 	}
 	

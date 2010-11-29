@@ -21,7 +21,7 @@ public class GetMore extends Request {
 		super(OperationCode.OP_GETMORE, databaseName, collectionName);
 		this.numberToReturn = numberToReturn;
 		this.cursorId = cursorId;
-		this.safeLevel = SafeLevel.NONE;
+		this.consistency = Consistency.NONE;
 	}
 
 	@Override

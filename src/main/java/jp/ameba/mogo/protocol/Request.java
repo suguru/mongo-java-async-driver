@@ -20,7 +20,7 @@ public abstract class Request {
 	// 返却待ち受け用のリクエストID
 	protected int waitingRequestId;
 	// リクエストの Safeレベル
-	protected SafeLevel safeLevel;
+	protected Consistency consistency;
 	
 	/**
 	 * 
@@ -112,21 +112,21 @@ public abstract class Request {
 	public abstract void encode(BSONEncoder encoder);
 
 	/**
-	 * この処理に対する {@link SafeLevel} を取得します。
+	 * この処理に対する {@link Consistency} を取得します。
 	 * OP_QUERY, OP_GETMORE に関しては適用されません。
 	 * 
 	 * @return
 	 */
-	public SafeLevel getSafeLevel() {
-		return safeLevel;
+	public Consistency getConsistency() {
+		return consistency;
 	}
 
 	/**
-	 * この処理に対する {@link SafeLevel} を設定します。
+	 * この処理に対する {@link Consistency} を設定します。
 	 * デフォルトは SAFE が適用されています。
 	 * @param safeLevel
 	 */
-	protected void setSafeLevel(SafeLevel safeLevel) {
-		this.safeLevel = safeLevel;
+	public void setConsistency(Consistency consistency) {
+		this.consistency = consistency;
 	}
 }

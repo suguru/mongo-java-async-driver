@@ -64,13 +64,14 @@
 	</repositories>
 	
 	<dependencies>
-		<!-- 
+
+		
 		<dependency>
 			<groupId>org.mongodb</groupId>
 			<artifactId>mongo-java-driver</artifactId>
 			<version>2.3</version>
 		</dependency>
-		-->
+		
 
 		<dependency>
 			<groupId>org.mongodb</groupId>

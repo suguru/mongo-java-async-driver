@@ -17,8 +17,18 @@ public class Update extends Request {
 	private BSONObject update;
 	
 	/**
-	 * Update
-	 * 
+	 * UPDATE
+	 * @param databaseName
+	 * @param collectionName
+	 */
+	public Update(
+			String databaseName,
+			String collectionName) {
+		super(OperationCode.OP_UPDATE, databaseName, collectionName);
+	}
+	
+	/**
+	 * UPDATE
 	 * @param collectionName
 	 * @param upsert
 	 * @param multiUpdate
@@ -33,7 +43,28 @@ public class Update extends Request {
 		super(OperationCode.OP_UPDATE, databaseName, collectionName);
 		this.selector = selector;
 		this.update = update;
-		this.safeLevel = SafeLevel.SAFE;
+		this.consistency = Consistency.SAFE;
+	}
+
+	/**
+	 * Update対象セレクタを設定します。
+	 * 
+	 * @param selector
+	 * @return
+	 */
+	public Update selector(BSONObject selector) {
+		this.selector = selector;
+		return this;
+	}
+	
+	/**
+	 * 更新対象の内容を設定します。
+	 * @param update
+	 * @return
+	 */
+	public Update update(BSONObject update) {
+		this.update = update;
+		return this;
 	}
 	
 	/**
@@ -58,13 +89,13 @@ public class Update extends Request {
 	}
 	
 	/**
-	 * 更新における {@link SafeLevel} を設定します。
+	 * 更新における {@link Consistency} を設定します。
 	 * 
 	 * @param safeLevel
 	 * @return
 	 */
-	public Update safeLevel(SafeLevel safeLevel) {
-		setSafeLevel(safeLevel);
+	public Update consistency(Consistency consistency) {
+		setConsistency(consistency);
 		return this;
 	}
 
