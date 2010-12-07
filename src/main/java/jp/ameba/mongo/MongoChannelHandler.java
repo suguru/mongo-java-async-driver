@@ -1,5 +1,10 @@
 package jp.ameba.mongo;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import jp.ameba.mogo.protocol.MessageHeader;
 import jp.ameba.mogo.protocol.OperationCode;
 import jp.ameba.mogo.protocol.Query;
@@ -14,6 +19,7 @@ import org.bson.io.OutputBuffer;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferOutputStream;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -23,27 +29,68 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 
 /**
- * {@link MongoClient} において接続ごとに生成される
- * {@link ChannelHandler} 実装
+ * MongoDB プロトコルを実装した
+ * {@link ChannelHandler} 実装クラスです。
  * 
  * @author suguru
  */
-public class MongoClientHandler extends SimpleChannelHandler {
+public class MongoChannelHandler extends SimpleChannelHandler {
 
-	// クライアント用コンテキスト
-	private MongoClientContext clientContext;
+	// アクティブなチャネル一覧
+	private ConcurrentMap<Integer, Channel> liveChannelMap;
+	
+	// アクティブなチャネル一覧
+	private List<Channel> liveChannelList;
+	
+	// 非アクティブなチャネル一覧
+	private ConcurrentMap<Integer, Channel> deadChannelMap;
+	
+	// 返答待ち中の送信済みリクエスト一覧
+	private ConcurrentMap<Integer, Request> requestMap;
 	
 	/**
-	 * 
+	 * {@link MongoChannelHandler}
 	 * @param clientContext
 	 */
-	public MongoClientHandler(MongoClientContext clientContext) {
-		this.clientContext = clientContext;
+	public MongoChannelHandler() {
+		this.liveChannelList = new ArrayList<Channel>();
+		this.liveChannelMap = new ConcurrentHashMap<Integer, Channel>();
+		this.deadChannelMap = new ConcurrentHashMap<Integer, Channel>();
+		this.requestMap = new ConcurrentHashMap<Integer, Request>();
+	}
+	
+	/**
+	 * アクティブな接続チャネル一覧を取得します。
+	 * @return
+	 */
+	public List<Channel> getLiveChannelList() {
+		return liveChannelList;
 	}
 	
 	@Override
 	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
+		Channel channel = ctx.getChannel();
+		liveChannelMap.put(channel.getId(), channel);
+		deadChannelMap.remove(channel.getId());
+		synchronized (this) {
+			List<Channel> channelList = new ArrayList<Channel>(liveChannelMap.values());
+			this.liveChannelList = channelList;
+			notifyAll();
+		}
+	}
+	
+	@Override
+	public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
+			throws Exception {
+		Channel channel = ctx.getChannel();
+		liveChannelMap.remove(channel.getId());
+		deadChannelMap.put(channel.getId(), channel);
+		synchronized (this) {
+			List<Channel> channelList = new ArrayList<Channel>(liveChannelMap.values());
+			this.liveChannelList = channelList;
+			notifyAll();
+		}
 	}
 	
 	@Override
@@ -52,12 +99,15 @@ public class MongoClientHandler extends SimpleChannelHandler {
 		
 		Response response = (Response) e.getMessage();
 		if (response != null) {
-			RequestFuture future = clientContext.getFuture(response.getHeader().getResponseTo());
-			if (future != null) {
-				future.setResponse(response);
-				future.setDone(true);
-				synchronized (future) {
-					future.notifyAll();
+			Request request = requestMap.remove(response.getHeader().getResponseTo());
+			if (request != null) {
+				RequestFuture future = request.getFuture();
+				if (future != null) {
+					future.setResponse(response);	
+					future.setDone(true);
+					synchronized (future) {
+						future.notifyAll();	
+					}
 				}
 			}
 		}
@@ -71,9 +121,9 @@ public class MongoClientHandler extends SimpleChannelHandler {
 				throws Exception {
 		
 		// リクエストをバッファに変換して送信
-		Request message = (Request) e.getMessage();
-		
-		RequestFuture future = new RequestFuture(message);
+		Request request = (Request) e.getMessage();
+		RequestFuture future = new RequestFuture(request);
+		request.setFuture(future);
 		
 		// チャネルを通して送信
 		try {
@@ -82,22 +132,22 @@ public class MongoClientHandler extends SimpleChannelHandler {
 			BSONEncoder encoder = new BSONEncoder();
 			encoder.set(outputBuffer);
 			// リクエスト内容を出力
-			writeRequest(message, encoder, outputBuffer);
+			writeRequest(request, encoder, outputBuffer);
 			
 			// Safeリクエストの場合は、 getLastError クエリを付加
 			Request getLastError = null;
-			BSONObject query = message.getConsistency().getLastErrorQuery();
+			BSONObject query = request.getConsistency().getLastErrorQuery();
 			if (query != null) {
 				getLastError = new Query(
-						message.getDatabaseName(),
+						request.getDatabaseName(),
 						"$cmd",
 						0,
 						1,
 						query,
 						null
 				);
+				getLastError.setFuture(future);
 				writeRequest(getLastError, encoder, outputBuffer);
-				future.setGetLastError(getLastError);
 			}
 			
 			// ChannelBuffer を生成
@@ -109,14 +159,15 @@ public class MongoClientHandler extends SimpleChannelHandler {
 			future.setChannelFuture(channelFuture);
 			
 			// 送信リエクスト一覧に future を追加
-			OperationCode opCode = message.getHeader().getOpCode();
+			OperationCode opCode = request.getHeader().getOpCode();
 			// safeモード、もしくは返信が見込める場合は、リクエストIDを設定
 			if (opCode.hasReply() || getLastError != null) {
-				clientContext.addRequest(future);
 				if (getLastError == null) {
-					message.setWaitingRequestId(message.getRequestId());
+					requestMap.put(future.getRequetId(), request);
+					request.setWaitingRequestId(request.getRequestId());
 				} else {
-					message.setWaitingRequestId(getLastError.getRequestId());
+					requestMap.put(getLastError.getRequestId(), request);
+					request.setWaitingRequestId(getLastError.getRequestId());
 				}
 			}
 			Channels.write(ctx, channelFuture, channelBuffer);
@@ -124,9 +175,9 @@ public class MongoClientHandler extends SimpleChannelHandler {
 		} catch (Exception ex) {
 			// 例外が発生してしまった場合は、リクエスト一覧から future を除去
 			if (future.getGetLastError() == null) {
-				clientContext.removeFuture(future.getRequetId());
+				requestMap.remove(future.getRequetId());
 			} else {
-				clientContext.removeFuture(future.getGetLastError().getRequestId());
+				requestMap.remove(future.getGetLastError().getRequestId());
 			}
 			throw ex;
 		}
@@ -162,4 +213,10 @@ public class MongoClientHandler extends SimpleChannelHandler {
 		output.setPosition(end);
 	}
 
+	/*
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+			throws Exception {
+	}
+	*/
 }

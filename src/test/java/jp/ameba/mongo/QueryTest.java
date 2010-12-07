@@ -1,6 +1,7 @@
 package jp.ameba.mongo;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.List;
 
 import jp.ameba.mogo.protocol.Delete;
@@ -17,12 +18,11 @@ import org.junit.Test;
 
 public class QueryTest {
 
-	private MongoClient client;
+	private MongoConnection client;
 	
 	@Before
 	public void before() throws IOException {
-		client = new MongoClient();
-		client.setHosts("127.0.0.1");
+		client = new MongoDriver().createConnection(new InetSocketAddress("127.0.0.1", 27017));
 		client.open();
 		Assert.assertTrue(client.isOpen());
 		prepareData();
@@ -147,10 +147,8 @@ public class QueryTest {
 		}
 	}
 	
-	
 	@Test
 	public void testCursor() throws Exception {
-		
 		MongoCursor cursor = client.cursor("test", "testQuery");
 		int count = 0;
 		while (cursor.hasNext()) {
@@ -169,7 +167,6 @@ public class QueryTest {
 			count++;
 		}
 		Assert.assertEquals(100, count);
-		
 	}
 	
 	/**

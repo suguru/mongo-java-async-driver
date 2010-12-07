@@ -41,7 +41,7 @@ public class MessageHeader {
 	}
 	
 	/**
-	 * Clean data and prepare for next data.
+	 * データをクリアします
 	 */
 	public void clean() {
 		this.ready = false;

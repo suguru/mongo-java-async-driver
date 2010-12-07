@@ -1,5 +1,6 @@
 package jp.ameba.mongo;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -22,7 +23,7 @@ import org.bson.BasicBSONObject;
 public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 	
 	// MongoClient
-	private MongoClient client;
+	private MongoConnection conn;
 	
 	// 対象のデータベース名
 	private String databaseName;
@@ -79,10 +80,10 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 	private int position = 0;
 	
 	MongoCursor(
-			MongoClient client,
+			MongoConnection conn,
 			String databaseName,
 			String collectionName) {
-		this.client = client;
+		this.conn = conn;
 		this.databaseName = databaseName;
 		this.collectionName = collectionName;
 	}
@@ -254,16 +255,95 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 	
 	/**
 	 * クエリ条件を追加します。
-	 * @param key
+	 * @param field
 	 * @param queryValue
 	 * @return
 	 */
-	public MongoCursor selector(String key, Object queryValue) {
+	public MongoCursor selector(String field, Object queryValue) {
 		if (this.selector == null) {
 			this.selector = new BasicBSONObject();
 		}
-		this.selector.put(key, queryValue);
+		this.selector.put(field, queryValue);
 		return this;
+	}
+	
+	/**
+	 * 詳細なクエリ条件を追加します。
+	 * @param field
+	 * @param criteriaKey
+	 * @param criteriaValue
+	 * @return
+	 */
+	public MongoCursor selector(String field, String criteriaKey, Object criteriaValue) {
+		if (this.selector == null) {
+			this.selector = new BasicBSONObject();
+		}
+		BSONObject criteria = (BSONObject) selector.get(field);
+		if (criteria == null) {
+			criteria = new BasicBSONObject();
+			selector.put(field, criteria);
+		}
+		criteria.put(criteriaKey, criteriaValue);
+		return this;
+	}
+	
+	/**
+	 * 指定の値より大きな値を検索条件とします。
+	 * @param field
+	 * @param value
+	 * @return
+	 */
+	public MongoCursor greaterThan(String field, Object value) {
+		return selector(field, "$gt", value);
+	}
+	
+	/**
+	 * 指定の値より小さな値を検索条件とします。
+	 * @param field
+	 * @param value
+	 * @return
+	 */
+	public MongoCursor lesserThan(String field, Object value) {
+		return selector(field, "$lt", value);
+	}
+	
+	/**
+	 * 指定の値と等しいか、大きな値を検索条件とします。
+	 * @param field
+	 * @param value
+	 * @return
+	 */
+	public MongoCursor greaterThanEquals(String field, Object value) {
+		return selector(field, "$gte", value);
+	}
+	
+	/**
+	 * 指定の値と等しいか、小さい値を検索条件とします。
+	 * @param field
+	 * @param value
+	 * @return
+	 */
+	public MongoCursor lesserThanEquals(String field, Object value) {
+		return selector(field, "$lte", value);
+	}
+	
+	/**
+	 * 指定の値を不等であることを検索条件とします。
+	 * @param field
+	 * @param value
+	 * @return
+	 */
+	public MongoCursor notEquals(String field, Object value) {
+		return selector(field, "$ne", value);
+	}
+	
+	/**
+	 * 指定のフィールドが存在する行のみ検索条件とします。
+	 * @param field
+	 * @return
+	 */
+	public MongoCursor exists(String field) {
+		return selector(field, "$exists", true);
 	}
 	
 	@Override
@@ -287,7 +367,7 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 				}
 				query = new Query(databaseName, collectionName, firstSkip, batchSize, queryObject, fields);
 			}
-			lastResult= client.query(query);
+			lastResult= conn.query(query);
 			// 最終結果がなければ、次はない
 			if (lastResult.getNumberReturned() == 0) {
 				finished = true;
@@ -297,7 +377,7 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 		// ドキュメント一覧取得
 		List<BSONObject> documents = lastResult.getDocuments();
 		if (documents == null || indexInResult >= documents.size()) {
-			lastResult = client.getMore(new GetMore(
+			lastResult = conn.getMore(new GetMore(
 					databaseName,
 					collectionName,
 					batchSize,
@@ -311,6 +391,20 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 			}
 		}
 		return true;
+	}
+	
+	/**
+	 * このカーソルによって取得可能なすべてのオブジェクトを
+	 * {@link List} として取得します。
+	 * 
+	 * @return
+	 */
+	public List<BSONObject> asList() {
+		List<BSONObject> list = new ArrayList<BSONObject>();
+		for (BSONObject object : this) {
+			list.add(object);
+		}
+		return list;
 	}
 	
 	@Override
@@ -333,7 +427,7 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 					collectionName,
 					new BasicBSONObject("_id", currentObject.get("_id"))
 			);
-			client.delete(delete);
+			conn.delete(delete);
 		}
 	}
 	
@@ -344,15 +438,18 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 	
 	@Override
 	protected void finalize() throws Throwable {
-		if (!closed) {
-			close();
-		}
+		close();
 	}
 
+	/**
+	 * このカーソルのクローズ処理を行います。
+	 * サーバーに対して KILL_CURSOR を送信し、
+	 * リソースの解放を実施します。
+	 */
 	public void close() {
 		if (!closed) {
 			if (lastResult != null) {
-				client.killCursors(new KillCursors(lastResult.getCursorId()));
+				conn.killCursors(new KillCursors(lastResult.getCursorId()));
 			}
 			closed = true;
 		}

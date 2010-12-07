@@ -1,5 +1,7 @@
 package jp.ameba.mongo;
 
+import java.net.InetSocketAddress;
+
 import junit.framework.Assert;
 
 import org.junit.Test;
@@ -12,19 +14,17 @@ public class OpenCloseTest {
 	
 	@Test
 	public void testOpen() throws Exception {
-		MongoClient client = new MongoClient();
-		client.setHosts("127.0.0.1");
-		client.open();
-		Assert.assertTrue(client.isOpen());
-		client.close();
-		Assert.assertFalse(client.isOpen());
+		MongoConnection conn = new MongoDriver().createConnection(new InetSocketAddress("127.0.0.1", 27017));
+		conn.open();
+		Assert.assertTrue(conn.isOpen());
+		conn.close();
+		Assert.assertFalse(conn.isOpen());
 	}
 	
 	@Test
 	public void testOpenAsync() throws Exception {
 		
-		MongoClient client = new MongoClient();
-		client.setHosts("127.0.0.1");
+		MongoConnection client = new MongoDriver().createConnection(new InetSocketAddress("127.0.0.1", 27017));
 		
 		// Asynchronous open
 		MongoFuture future = client.openAsync();

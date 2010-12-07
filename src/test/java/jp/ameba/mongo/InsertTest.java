@@ -1,6 +1,7 @@
 package jp.ameba.mongo;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 import jp.ameba.mogo.protocol.Delete;
 import jp.ameba.mogo.protocol.Insert;
@@ -16,12 +17,12 @@ import org.junit.Test;
 
 public class InsertTest {
 
-	private MongoClient client;
+	private MongoConnection client;
 	
 	@Before
 	public void before() throws IOException {
-		client = new MongoClient();
-		client.setHosts("127.0.0.1");
+		MongoDriver driver = new MongoDriver();
+		client = driver.createConnection(new InetSocketAddress("127.0.0.1", 27017));
 		client.open();
 		Assert.assertTrue(client.isOpen());
 	}

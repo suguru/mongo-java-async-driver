@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * {@link MongoClient} への透過的なアクセスや、
+ * {@link MongoConnectionImpl} への透過的なアクセスや、
  * {@link MongoCollection} を取得するための
  * ラッパークラスです。
  * 
@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class MongoDatabase {
 	
-	private MongoClient client;
+	private MongoConnectionImpl client;
 	
 	private String databaseName;
 	
@@ -24,17 +24,17 @@ public class MongoDatabase {
 	 * @param client
 	 * @param databaseName
 	 */
-	public MongoDatabase(MongoClient client, String databaseName) {
+	public MongoDatabase(MongoConnectionImpl client, String databaseName) {
 		this.client = client;
 		this.databaseName = databaseName;
 		this.collections = new ConcurrentHashMap<String, MongoCollection>();
 	}
 	
 	/**
-	 * 内包する {@link MongoClient} を取得します。
+	 * 内包する {@link MongoConnectionImpl} を取得します。
 	 * @return
 	 */
-	public MongoClient getClient() {
+	public MongoConnectionImpl getClient() {
 		return client;
 	}
 	

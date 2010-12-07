@@ -71,11 +71,59 @@ public class Response {
 	}
 	
 	/**
+	 * このレスポンスが正常に終了した結果であるかを確認します。
+	 * From MongoDB Java driver (CommandResult)
+	 * @return
+	 */
+    public boolean ok(){
+    	if (documents.size() == 0) {
+    		return false;
+    	}
+    	BSONObject doc = documents.get(0);
+        Object o = doc.get("ok");
+        if (o == null)
+            return false;
+
+        if (o instanceof Boolean)
+            return ((Boolean)o).booleanValue();
+        
+        if (o instanceof Number)
+            return ((Number)o).intValue() == 1;
+        
+        throw new IllegalArgumentException( "can't figure out what to do with: " + o.getClass().getName() );
+    }
+
+    /**
+     * 失敗している場合のエラーメッセージを取得します。
+     * From MongoDB Java driver (CommandResult)
+     * @return
+     */
+    public String getErrorMessage(){
+    	if (documents.size() == 0) {
+    		return null;
+    	}
+    	BSONObject doc = documents.get(0);
+        Object errorMessage = doc.get("errmsg");
+        return errorMessage == null ? null : errorMessage.toString();
+    }
+    
+	/**
 	 * 内包するドキュメント一覧を取得します。
 	 * @return
 	 */
 	public List<BSONObject> getDocuments() {
 		return documents;
+	}
+	
+	/**
+	 * 内包するドキュメントの最初の1つを取得します。
+	 * @return
+	 */
+	public BSONObject getDocument() {
+		if (documents.size() == 0) {
+			return null;
+		}
+		return documents.get(0);
 	}
 	
 	/**

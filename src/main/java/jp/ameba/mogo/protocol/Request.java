@@ -21,6 +21,8 @@ public abstract class Request {
 	protected int waitingRequestId;
 	// リクエストの Safeレベル
 	protected Consistency consistency;
+	// リクエストフューチャー情報
+	private RequestFuture future;
 	
 	/**
 	 * 
@@ -128,5 +130,21 @@ public abstract class Request {
 	 */
 	public void setConsistency(Consistency consistency) {
 		this.consistency = consistency;
+	}
+	
+	/**
+	 * このリクエストに関連する {@link RequestFuture} を設定します。
+	 * @param future
+	 */
+	public void setFuture(RequestFuture future) {
+		this.future = future;
+	}
+	
+	/**
+	 * このリクエストに関連する {@link RequestFuture} を取得します。
+	 * @return
+	 */
+	public RequestFuture getFuture() {
+		return future;
 	}
 }
