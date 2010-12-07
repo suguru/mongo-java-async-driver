@@ -1,4 +1,4 @@
-package jp.ameba.mogo.protocol;
+package jp.ameba.mongo.protocol;
 
 public class BitWise {
 	

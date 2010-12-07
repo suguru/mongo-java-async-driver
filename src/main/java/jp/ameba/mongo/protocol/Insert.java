@@ -1,4 +1,4 @@
-package jp.ameba.mogo.protocol;
+package jp.ameba.mongo.protocol;
 
 import java.util.LinkedList;
 import java.util.List;

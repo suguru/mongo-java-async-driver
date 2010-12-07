@@ -4,16 +4,16 @@ import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import jp.ameba.mogo.protocol.Consistency;
-import jp.ameba.mogo.protocol.Delete;
-import jp.ameba.mogo.protocol.GetMore;
-import jp.ameba.mogo.protocol.Insert;
-import jp.ameba.mogo.protocol.KillCursors;
-import jp.ameba.mogo.protocol.Query;
-import jp.ameba.mogo.protocol.Request;
-import jp.ameba.mogo.protocol.RequestFuture;
-import jp.ameba.mogo.protocol.Response;
-import jp.ameba.mogo.protocol.Update;
+import jp.ameba.mongo.protocol.Consistency;
+import jp.ameba.mongo.protocol.Delete;
+import jp.ameba.mongo.protocol.GetMore;
+import jp.ameba.mongo.protocol.Insert;
+import jp.ameba.mongo.protocol.KillCursors;
+import jp.ameba.mongo.protocol.Query;
+import jp.ameba.mongo.protocol.Request;
+import jp.ameba.mongo.protocol.RequestFuture;
+import jp.ameba.mongo.protocol.Response;
+import jp.ameba.mongo.protocol.Update;
 
 import org.bson.BSONObject;
 import org.jboss.netty.channel.Channel;

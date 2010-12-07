@@ -1,6 +1,6 @@
 package jp.ameba.mongo;
 
-import jp.ameba.mogo.protocol.Consistency;
+import jp.ameba.mongo.protocol.Consistency;
 
 /**
  * {@link MongoConnection} の各種設定

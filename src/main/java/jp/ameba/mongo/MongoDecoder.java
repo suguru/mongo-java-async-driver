@@ -1,8 +1,8 @@
 package jp.ameba.mongo;
 
-import jp.ameba.mogo.protocol.MessageHeader;
-import jp.ameba.mogo.protocol.OperationCode;
-import jp.ameba.mogo.protocol.Response;
+import jp.ameba.mongo.protocol.MessageHeader;
+import jp.ameba.mongo.protocol.OperationCode;
+import jp.ameba.mongo.protocol.Response;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;

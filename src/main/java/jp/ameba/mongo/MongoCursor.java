@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import jp.ameba.mogo.protocol.Delete;
-import jp.ameba.mogo.protocol.GetMore;
-import jp.ameba.mogo.protocol.KillCursors;
-import jp.ameba.mogo.protocol.Query;
-import jp.ameba.mogo.protocol.Response;
+import jp.ameba.mongo.protocol.Delete;
+import jp.ameba.mongo.protocol.GetMore;
+import jp.ameba.mongo.protocol.KillCursors;
+import jp.ameba.mongo.protocol.Query;
+import jp.ameba.mongo.protocol.Response;
 
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;

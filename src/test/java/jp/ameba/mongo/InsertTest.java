@@ -3,10 +3,10 @@ package jp.ameba.mongo;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import jp.ameba.mogo.protocol.Delete;
-import jp.ameba.mogo.protocol.Insert;
-import jp.ameba.mogo.protocol.Query;
-import jp.ameba.mogo.protocol.Response;
+import jp.ameba.mongo.protocol.Delete;
+import jp.ameba.mongo.protocol.Insert;
+import jp.ameba.mongo.protocol.Query;
+import jp.ameba.mongo.protocol.Response;
 
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;

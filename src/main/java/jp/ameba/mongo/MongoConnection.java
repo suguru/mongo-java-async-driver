@@ -1,12 +1,12 @@
 package jp.ameba.mongo;
 
-import jp.ameba.mogo.protocol.Delete;
-import jp.ameba.mogo.protocol.GetMore;
-import jp.ameba.mogo.protocol.Insert;
-import jp.ameba.mogo.protocol.KillCursors;
-import jp.ameba.mogo.protocol.Query;
-import jp.ameba.mogo.protocol.Response;
-import jp.ameba.mogo.protocol.Update;
+import jp.ameba.mongo.protocol.Delete;
+import jp.ameba.mongo.protocol.GetMore;
+import jp.ameba.mongo.protocol.Insert;
+import jp.ameba.mongo.protocol.KillCursors;
+import jp.ameba.mongo.protocol.Query;
+import jp.ameba.mongo.protocol.Response;
+import jp.ameba.mongo.protocol.Update;
 
 /**
  * MongoDB に対する接続および通信を行うためのインターフェイス

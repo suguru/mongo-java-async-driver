@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import jp.ameba.mogo.protocol.MessageHeader;
-import jp.ameba.mogo.protocol.OperationCode;
-import jp.ameba.mogo.protocol.Query;
-import jp.ameba.mogo.protocol.Request;
-import jp.ameba.mogo.protocol.RequestFuture;
-import jp.ameba.mogo.protocol.Response;
+import jp.ameba.mongo.protocol.MessageHeader;
+import jp.ameba.mongo.protocol.OperationCode;
+import jp.ameba.mongo.protocol.Query;
+import jp.ameba.mongo.protocol.Request;
+import jp.ameba.mongo.protocol.RequestFuture;
+import jp.ameba.mongo.protocol.Response;
 
 import org.bson.BSONEncoder;
 import org.bson.BSONObject;
