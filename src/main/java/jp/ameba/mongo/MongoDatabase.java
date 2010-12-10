@@ -12,10 +12,13 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class MongoDatabase {
 	
-	private MongoConnectionImpl client;
+	// MongoClient
+	private MongoClient client;
 	
+	// データベース名
 	private String databaseName;
 	
+	// コレクション一覧
 	private ConcurrentMap<String, MongoCollection> collections;
 
 	/**
@@ -24,17 +27,17 @@ public class MongoDatabase {
 	 * @param client
 	 * @param databaseName
 	 */
-	public MongoDatabase(MongoConnectionImpl client, String databaseName) {
+	public MongoDatabase(MongoClient client, String databaseName) {
 		this.client = client;
 		this.databaseName = databaseName;
 		this.collections = new ConcurrentHashMap<String, MongoCollection>();
 	}
 	
 	/**
-	 * 内包する {@link MongoConnectionImpl} を取得します。
+	 * 内包する {@link MongoClient} を取得します。
 	 * @return
 	 */
-	public MongoConnectionImpl getClient() {
+	public MongoClient getClient() {
 		return client;
 	}
 	
@@ -56,7 +59,8 @@ public class MongoDatabase {
 		MongoCollection collection = collections.get(collectionName);
 		if (collection == null) {
 			// キャシュになければ、新規に作成
-			MongoCollection oldOne = collections.putIfAbsent(collectionName, null);
+			collection = new MongoCollectionImpl(client, databaseName, collectionName);
+			MongoCollection oldOne = collections.putIfAbsent(collectionName, collection);
 			if (oldOne != null) {
 				// 作成済みのキャッシュが存在する場合は、古い方で上書き
 				collection = oldOne;

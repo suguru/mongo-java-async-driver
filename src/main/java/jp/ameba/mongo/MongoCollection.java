@@ -6,13 +6,25 @@ import org.bson.BSONObject;
 
 /**
  * 特定の MongoDB に存在する Colletion に対する
- * {@link MongoConnectionImpl} を経由した処理を簡素化して
+ * {@link MongoConnection} を経由した処理を簡素化して
  * 提供するためのインターフェイスです。
  * {@link MongoDatabase} から実装を取得します。
  * 
  * @author suguru
  */
 public interface MongoCollection {
+	
+	/**
+	 * このコレクションの名称を取得します。
+	 * @return
+	 */
+	String getCollectionName();
+	
+	/**
+	 * このコレクションの所属するデータベース名を取得します。
+	 * @return
+	 */
+	String getDatabaseName();
 	
 	/**
 	 * デフォルトの一貫性レベルを設定します。
@@ -83,6 +95,14 @@ public interface MongoCollection {
 	long count(BSONObject selector);
 	
 	/**
+	 * 指定のドキュメントを更新し、更新結果を取得します。
+	 * @param selector
+	 * @param document
+	 * @return
+	 */
+	BSONObject findAndModify(BSONObject selector, BSONObject document);
+	
+	/**
 	 * 指定条件のドキュメントを更新します。
 	 * @param selector
 	 * @param document
@@ -126,4 +146,24 @@ public interface MongoCollection {
 	 * @param consistency
 	 */
 	void remove(BSONObject selector, Consistency consistency);
+	
+	/**
+	 * インデクスを作成します。
+	 * @param keys
+	 * @param options
+	 */
+	void createIndex(BSONObject keys, BSONObject options);
+	
+	/**
+	 * インデクスを作成します。
+	 * @param keys
+	 * @param options
+	 * @param consistency
+	 */
+	void createIndex(BSONObject keys, BSONObject options, Consistency consistency);
+	
+	/**
+	 * コレクション全体を破棄します。
+	 */
+	void drop();
 }

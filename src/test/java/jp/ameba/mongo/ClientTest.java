@@ -29,6 +29,17 @@ public class ClientTest {
 	}
 	
 	@Test
+	public void testDrop() throws Exception {
+		
+		MongoCollection collection = client.getCollection("test", "client");
+		collection.upsert(new BasicBSONObject("_id", 1), new BasicBSONObject("_id", 1).append("name", "name-1"));
+		collection.drop();
+		
+		Assert.assertEquals(0, collection.count());
+				
+	}
+	
+	@Test
 	public void testInsert() throws Exception {
 		
 		MongoCollection collection = client.getCollection("test", "client");
@@ -167,5 +178,30 @@ public class ClientTest {
 		}
 		
 		Assert.assertEquals(0, collection.count());
+	}
+	
+	@Test
+	public void testIndex() throws Exception {
+		
+		MongoCollection collection = client.getCollection("test", "client");
+		collection.drop();
+		
+		MongoCollection indexCollection = client.getCollection("test", "system.indexes");
+		long currentIndexCount = indexCollection.count();
+		
+		for (int i = 0; i < 100; i++) {
+			BSONObject doc = new BasicBSONObject()
+			.append("_id", i)
+			.append("name", "name-" + i);
+			collection.insert(doc);
+		}
+		
+		Assert.assertEquals(100, collection.count());
+		
+		collection.createIndex(new BasicBSONObject("name", 1), new BasicBSONObject());
+		
+		Assert.assertEquals(currentIndexCount+2, indexCollection.count());
+		
+		
 	}
 }

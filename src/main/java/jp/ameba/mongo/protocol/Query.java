@@ -46,52 +46,52 @@ public class Query extends Request {
 		this.consistency = Consistency.NONE;
 	}
 	
-	public Query setTailableCursor(boolean tailable) {
+	public Query tailableCursor(boolean tailable) {
 		this.flags = BitWise.addBit(flags, 1);
 		return this;
 	}
 	
-	public Query setSlaveOk(boolean slaveOk) {
+	public Query slaveOk(boolean slaveOk) {
 		this.flags = BitWise.addBit(flags, 2);
 		return this;
 	}
 	
-	public Query setOplogReplay(boolean oplogReplay) {
+	public Query oplogReplay(boolean oplogReplay) {
 		this.flags = BitWise.addBit(flags, 3);
 		return this;
 	}
 	
-	public Query setNoCursorTimeout(boolean noCursorTimeout) {
+	public Query noCursorTimeout(boolean noCursorTimeout) {
 		this.flags = BitWise.addBit(flags, 4);
 		return this;
 	}
 	
-	public Query setAwaitData(boolean awaitData) {
+	public Query awaitData(boolean awaitData) {
 		this.flags = BitWise.addBit(flags, 5);
 		return this;
 	}
 	
-	public Query setExhaust(boolean exhaust) {
+	public Query exhaust(boolean exhaust) {
 		this.flags = BitWise.addBit(flags, 6);
 		return this;
 	}
 	
-	public Query setNumberToReturn(int numberToReturn) {
+	public Query numberToReturn(int numberToReturn) {
 		this.numberToReturn = numberToReturn;
 		return this;
 	}
 	
-	public Query setNumberToSkip(int numberToSkip) {
+	public Query numberToSkip(int numberToSkip) {
 		this.numberToSkip = numberToSkip;
 		return this;
 	}
 	
-	public Query addQuery(String key, Object value) {
+	public Query where(String key, Object value) {
 		this.query.put(key, value);
 		return this;
 	}
 	
-	public Query addReturnField(String key) {
+	public Query field(String key) {
 		if (returnFieldSelector == null) {
 			returnFieldSelector = new BasicBSONObject();
 		}

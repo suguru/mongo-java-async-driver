@@ -30,12 +30,16 @@ public class MongoClient {
 	
 	// MongoConnection の Channel ID 対応表
 	private ConcurrentMap<Integer, MongoConnection> connectionMap;
+	
+	// MongoDatabase 対応表
+	private ConcurrentMap<String, MongoDatabase> databaseMap;
 
 	public MongoClient() {
 		this.channelHandler = new MongoChannelHandler();
 		this.driver = new MongoDriver(channelHandler);
 		this.roundRobinKey = new AtomicInteger();
 		this.connectionMap = new ConcurrentHashMap<Integer, MongoConnection>();
+		this.databaseMap = new ConcurrentHashMap<String, MongoDatabase>();
 	}
 	
 	/**
@@ -124,6 +128,23 @@ public class MongoClient {
 	}
 	
 	/**
+	 * 
+	 * @param databaseName
+	 * @return
+	 */
+	public MongoDatabase getDatabase(String databaseName) {
+		MongoDatabase database = databaseMap.get(databaseName);
+		if (database == null) {
+			database = new MongoDatabase(this, databaseName);
+			MongoDatabase oldDatabase = databaseMap.putIfAbsent(databaseName, database);
+			if (oldDatabase != null) {
+				return oldDatabase;
+			}
+		}
+		return database;
+	}
+	
+	/**
 	 * コレクション名を指定して、
 	 * {@link MongoCollection} インスタンスを取得します。
 	 * 
@@ -131,9 +152,11 @@ public class MongoClient {
 	 * @return
 	 */
 	public MongoCollection getCollection(String databaseName, String collectionName) {
-		MongoCollection collection = new MongoCollectionImpl(this, databaseName, collectionName);
-		collection.setDefaultConsistency(driver.getConfiguration().getDefaultConsistency());
-		return collection;
+		MongoDatabase database = getDatabase(databaseName);
+		if (database != null) {
+			return database.getCollection(collectionName);
+		}
+		return null;
 	}
 
 	/**

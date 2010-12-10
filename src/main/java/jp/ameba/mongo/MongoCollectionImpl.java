@@ -27,6 +27,8 @@ public class MongoCollectionImpl implements MongoCollection {
 	private String databaseName;
 	// 対象のコレクション名
 	private String collectionName;
+	// 対象の名前空間を表すフルネーム
+	private String fullName;
 	
 	/**
 	 * {@link MongoCollectionImpl} を構成します。
@@ -42,6 +44,11 @@ public class MongoCollectionImpl implements MongoCollection {
 		this.client = client;
 		this.databaseName = databaseName;
 		this.collectionName = collectionName;
+		this.fullName = new StringBuilder(databaseName.length() + collectionName.length() + 1)
+			.append(databaseName)
+			.append('.')
+			.append(collectionName)
+			.toString();
 	}
 	
 	/**
@@ -128,6 +135,17 @@ public class MongoCollectionImpl implements MongoCollection {
 						fields)
 				).getDocument();
 	}
+	
+	@Override
+	public BSONObject findAndModify(BSONObject selector, BSONObject document) {
+		Response response = client.getConnection().query(
+				new Query(databaseName, "$cmd", 0, 1, new BasicBSONObject()
+						.append("query" , selector)
+						.append("update", document)
+				)
+		);
+		return response.getDocument();
+	}
 
 	@Override
 	public MongoCursor cursor() {
@@ -200,6 +218,58 @@ public class MongoCollectionImpl implements MongoCollection {
 						collectionName,
 						selector
 				).consistency(consistency)
+		);
+	}
+	
+	@Override
+	public void createIndex(BSONObject keys, BSONObject options) {
+		createIndex(keys, options, defaultConsistency);
+	}
+	
+	@Override
+	public void createIndex(BSONObject keys, BSONObject options, Consistency consistency) {
+		
+		BasicBSONObject doc = new BasicBSONObject();
+		if (options != null) {
+			doc.putAll(options);
+		}
+		
+		StringBuilder nameBuilder = new StringBuilder(32);
+		boolean first = true;
+		for (String key : keys.keySet()) {
+			if (first) {
+				first = false;
+			} else {
+				nameBuilder.append('_');
+			}
+			nameBuilder.append(key);
+		}
+		
+		doc
+			.append("key", keys)
+			.append("ns", fullName)
+			.append("name", nameBuilder.toString());
+		;
+
+		client.getConnection().insert(
+				new Insert(
+						databaseName,
+						"system.indexes",
+						doc
+				).consistency(consistency)
+		);
+
+	}
+	
+	@Override
+	public void drop() {
+		client.getConnection().query(
+				new Query(
+						databaseName,
+						"$cmd",
+						0, 1,
+						new BasicBSONObject("drop", collectionName)
+				)
 		);
 	}
 }
