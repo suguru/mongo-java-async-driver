@@ -146,13 +146,13 @@ public interface MongoCollection {
 	 * @param consistency
 	 */
 	void remove(BSONObject selector, Consistency consistency);
-	
+
 	/**
 	 * インデクスを作成します。
 	 * @param keys
 	 * @param options
 	 */
-	void createIndex(BSONObject keys, BSONObject options);
+	void createIndex(String indexName, BSONObject keys, BSONObject options);
 	
 	/**
 	 * インデクスを作成します。
@@ -160,7 +160,7 @@ public interface MongoCollection {
 	 * @param options
 	 * @param consistency
 	 */
-	void createIndex(BSONObject keys, BSONObject options, Consistency consistency);
+	void createIndex(String indexName, BSONObject keys, BSONObject options, Consistency consistency);
 	
 	/**
 	 * コレクション全体を破棄します。

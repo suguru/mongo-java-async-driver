@@ -198,7 +198,7 @@ public class ClientTest {
 		
 		Assert.assertEquals(100, collection.count());
 		
-		collection.createIndex(new BasicBSONObject("name", 1), new BasicBSONObject());
+		collection.createIndex("name_", new BasicBSONObject("name", 1), new BasicBSONObject());
 		
 		Assert.assertEquals(currentIndexCount+2, indexCollection.count());
 		

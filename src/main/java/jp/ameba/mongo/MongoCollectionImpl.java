@@ -222,33 +222,31 @@ public class MongoCollectionImpl implements MongoCollection {
 	}
 	
 	@Override
-	public void createIndex(BSONObject keys, BSONObject options) {
-		createIndex(keys, options, defaultConsistency);
+	public void createIndex(String indexName, BSONObject keys, BSONObject options) {
+		createIndex(indexName, keys, options, defaultConsistency);
 	}
 	
 	@Override
-	public void createIndex(BSONObject keys, BSONObject options, Consistency consistency) {
+	public void createIndex(String indexName, BSONObject keys, BSONObject options, Consistency consistency) {
 		
 		BasicBSONObject doc = new BasicBSONObject();
 		if (options != null) {
 			doc.putAll(options);
 		}
 		
-		StringBuilder nameBuilder = new StringBuilder(32);
-		boolean first = true;
-		for (String key : keys.keySet()) {
-			if (first) {
-				first = false;
-			} else {
+		if (indexName == null) {
+			StringBuilder nameBuilder = new StringBuilder(32);
+			for (String key : keys.keySet()) {
+				nameBuilder.append(key);
 				nameBuilder.append('_');
 			}
-			nameBuilder.append(key);
+			indexName = nameBuilder.toString();
 		}
 		
 		doc
 			.append("key", keys)
 			.append("ns", fullName)
-			.append("name", nameBuilder.toString());
+			.append("name", indexName)
 		;
 
 		client.getConnection().insert(

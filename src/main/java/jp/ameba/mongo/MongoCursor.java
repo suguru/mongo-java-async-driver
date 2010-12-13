@@ -120,10 +120,20 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 	 * @return
 	 */
 	public MongoCursor field(String field) {
+		return field(field, 1);
+	}
+	
+	/**
+	 * 取得フィールドを設定・追加します。
+	 * @param field
+	 * @param value
+	 * @return
+	 */
+	public MongoCursor field(String field, Object value) {
 		if (fields == null) {
 			fields = new BasicBSONObject();
 		}
-		fields.put(field, 1);
+		fields.put(field, value);
 		return this;
 	}
 	
@@ -232,6 +242,51 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 	}
 	
 	/**
+	 * クエリに対する slaveOk フラグを設定します。
+	 * @return
+	 */
+	public MongoCursor slaveOk() {
+		query.slaveOk(true);
+		return this;
+	}
+	
+	/**
+	 * クエリに対する Talable フラグを設定します。 
+	 * @return
+	 */
+	public MongoCursor tailable() {
+		query.tailableCursor(true);
+		return this;
+	}
+	
+	/**
+	 * クエリに対する カーソルタイムアウトを無効にします。
+	 * @return
+	 */
+	public MongoCursor noCursorTimeout() {
+		query.noCursorTimeout(true);
+		return this;
+	}
+	
+	/**
+	 * クエリに対するデータ待機を有効にします。
+	 * @return
+	 */
+	public MongoCursor awaitData() {
+		query.awaitData(true);
+		return this;
+	}
+	
+	/**
+	 * クエリに対する Exhaust オプションを有効にします。
+	 * @return
+	 */
+	public MongoCursor exhaust() {
+		query.exhaust(true);
+		return this;
+	}
+	
+	/**
 	 * クエリのスナップショットを設定します。
 	 * @return
 	 */
@@ -264,6 +319,20 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 			this.selector = new BasicBSONObject();
 		}
 		this.selector.put(field, queryValue);
+		return this;
+	}
+	
+	/**
+	 * 指定のクエリ条件を設定します。
+	 * @param selector
+	 * @return
+	 */
+	public MongoCursor selector(BSONObject selector) {
+		if (this.selector == null) {
+			this.selector = selector;
+		} else {
+			this.selector.putAll(selector);
+		}
 		return this;
 	}
 	
