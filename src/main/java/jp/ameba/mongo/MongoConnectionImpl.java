@@ -254,8 +254,8 @@ public class MongoConnectionImpl implements MongoConnection {
 		RequestFuture requestFuture = request.getFuture();
 		try {
 			Response response = requestFuture.get();
-			if (response.isQueryFailrue()) {
-				throw new MongoException("Query failure " + response.getErrorMessage());
+			if (!response.isOk()) {
+				throw new MongoException("Query failure: " + response.getErrorMessage());
 			} else {
 				return response;
 			}
@@ -279,14 +279,7 @@ public class MongoConnectionImpl implements MongoConnection {
 				Response response = requestFuture.get();
 				BSONObject object = response.getDocuments().get(0);
 				// OK でない場合は、例外を発する
-				Object ok = object.get("ok");
-				boolean isOk = false;
-				if (ok.getClass() == Boolean.class) {
-					isOk = (Boolean) ok;
-				} else if (ok instanceof Number) {
-					isOk = ((Number) object.get("ok")).intValue() == 1;
-				}
-				if (!isOk) {
+				if (!response.isOk()) {
 					String error = (String) object.get("errmsg");
 					throw new MongoException(error);
 				}

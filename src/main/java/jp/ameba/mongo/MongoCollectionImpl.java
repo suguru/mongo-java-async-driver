@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import jp.ameba.mongo.protocol.Consistency;
 import jp.ameba.mongo.protocol.Delete;
+import jp.ameba.mongo.protocol.FindAndModify;
 import jp.ameba.mongo.protocol.Insert;
 import jp.ameba.mongo.protocol.Query;
 import jp.ameba.mongo.protocol.Response;
@@ -137,16 +138,10 @@ public class MongoCollectionImpl implements MongoCollection {
 	}
 	
 	@Override
-	public BSONObject findAndModify(BSONObject selector, BSONObject document) {
-		Response response = client.getConnection().query(
-				new Query(databaseName, "$cmd", 0, 1, new BasicBSONObject()
-						.append("query" , selector)
-						.append("update", document)
-				)
-		);
-		return response.getDocument();
+	public FindAndModify findAndModify() {
+		return new FindAndModify(client.getConnection(), databaseName, collectionName);
 	}
-
+	
 	@Override
 	public MongoCursor cursor() {
 		return client.getConnection().cursor(databaseName, collectionName);

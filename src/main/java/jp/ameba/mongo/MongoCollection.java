@@ -1,6 +1,7 @@
 package jp.ameba.mongo;
 
 import jp.ameba.mongo.protocol.Consistency;
+import jp.ameba.mongo.protocol.FindAndModify;
 
 import org.bson.BSONObject;
 
@@ -100,7 +101,7 @@ public interface MongoCollection {
 	 * @param document
 	 * @return
 	 */
-	BSONObject findAndModify(BSONObject selector, BSONObject document);
+	FindAndModify findAndModify();
 	
 	/**
 	 * 指定条件のドキュメントを更新します。

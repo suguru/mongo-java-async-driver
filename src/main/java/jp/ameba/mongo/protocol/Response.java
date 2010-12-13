@@ -34,40 +34,60 @@ public class Response {
 	
 	private static final List<BSONObject> emptyList = Collections.unmodifiableList(new ArrayList<BSONObject>(0));
 	
+	/**
+	 * メッセージヘッダを設定し、レスポンスオブジェクトを作成します。
+	 * @param header
+	 */
 	public Response(MessageHeader header) {
 		this.header = header;
 	}
 	
+	/**
+	 * メッセージヘッダを取得します。
+	 * @return
+	 */
 	public MessageHeader getHeader() {
 		return header;
 	}
 	
+	/**
+	 * レスポンスフラグを取得します。
+	 * @return
+	 */
 	public int getResponseFlags() {
 		return responseFlags;
 	}
 	
+	/**
+	 * このレスポンスの持つカーソルIDを取得します。
+	 * @return
+	 */
 	public long getCursorId() {
 		return cursorId;
 	}
 	
+	/**
+	 * 返却されたドキュメント数を取得します。
+	 * @return
+	 */
 	public int getNumberReturned() {
 		return numberReturned;
 	}
 	
+	/**
+	 * 結果の開始位置を取得します。
+	 * @return
+	 */
 	public int getStartingFrom() {
 		return startingFrom;
 	}
 	
+	/**
+	 * CURSOR NOT FOUND が発生しているか確認します。
+	 * @return
+	 */
 	public boolean isCursorNotFound() {
 		return BitWise.hasBit(responseFlags, 0);
-	}
-	
-	public boolean isQueryFailrue() {
-		return BitWise.hasBit(responseFlags, 1);
-	}
-	
-	public boolean isAwaitCapable() {
-		return BitWise.hasBit(responseFlags, 3);
 	}
 	
 	/**
@@ -75,24 +95,35 @@ public class Response {
 	 * From MongoDB Java driver (CommandResult)
 	 * @return
 	 */
-    public boolean ok(){
+	public boolean isOk() {
+		if (BitWise.hasBit(responseFlags, 1)) {
+			return false;
+		}
     	if (documents.size() == 0) {
-    		return false;
+    		return true;
     	}
     	BSONObject doc = documents.get(0);
         Object o = doc.get("ok");
-        if (o == null)
-            return false;
-
-        if (o instanceof Boolean)
-            return ((Boolean)o).booleanValue();
-        
-        if (o instanceof Number)
-            return ((Number)o).intValue() == 1;
-        
-        throw new IllegalArgumentException( "can't figure out what to do with: " + o.getClass().getName() );
-    }
-
+        if (o == null) {
+            return true;
+        }
+        if (o instanceof Boolean) {
+            return (Boolean) o;
+        }
+        if (o instanceof Number) {
+            return ((Number) o).intValue() == 1;
+        }
+        throw new IllegalArgumentException("Illegal class '" + o.getClass().getName() + "'");
+	}
+	
+	/**
+	 * このレスポンスが AWAIT CAPABLE であるか確認します。
+	 * @return
+	 */
+	public boolean isAwaitCapable() {
+		return BitWise.hasBit(responseFlags, 3);
+	}
+	
     /**
      * 失敗している場合のエラーメッセージを取得します。
      * From MongoDB Java driver (CommandResult)

@@ -181,6 +181,34 @@ public class ClientTest {
 	}
 	
 	@Test
+	public void testFindAndModify() throws Exception {
+		
+		MongoCollection collection = client.getCollection("test", "client");
+		collection.drop();
+		
+		for (int i = 0; i < 100; i++) {
+			BSONObject doc = new BasicBSONObject()
+			.append("_id", i)
+			.append("name", "name-" + i);
+			collection.insert(doc);
+		}
+		
+		
+		BSONObject result = 
+			collection.findAndModify()
+			.query(new BasicBSONObject("_id", 20))
+			.update(new BasicBSONObject("_id", 20).append("name", "name-updated-" + 20))
+			.getnew()
+			.execute();
+		
+		Assert.assertNotNull(result);
+		Assert.assertEquals(20, result.get("_id"));
+		Assert.assertEquals("name-updated-20", result.get("name"));
+		
+		
+	}
+	
+	@Test
 	public void testIndex() throws Exception {
 		
 		MongoCollection collection = client.getCollection("test", "client");
