@@ -309,6 +309,17 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 	}
 	
 	/**
+	 * クエリ条件を保持するマップオブジェクトを取得します。
+	 * @return
+	 */
+	public BSONObject selector() {
+		if (this.selector == null) {
+			this.selector = new BasicBSONObject();
+		}
+		return this.selector;
+	}
+	
+	/**
 	 * クエリ条件を追加します。
 	 * @param field
 	 * @param queryValue
