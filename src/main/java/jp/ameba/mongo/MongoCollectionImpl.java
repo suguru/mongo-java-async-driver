@@ -229,7 +229,7 @@ public class MongoCollectionImpl implements MongoCollection {
 			doc.putAll(options);
 		}
 		
-		if (indexName == null) {
+		if (indexName == null || indexName.length() == 0) {
 			StringBuilder nameBuilder = new StringBuilder(32);
 			for (String key : keys.keySet()) {
 				nameBuilder.append(key);

@@ -111,7 +111,7 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 	 * @return
 	 */
 	public MongoCursor limit(int limit) {
-		return special("$maxscan", limit);
+		return special("$maxScan", limit);
 	}
 	
 	/**
@@ -306,6 +306,17 @@ public class MongoCursor implements Iterable<BSONObject>, Iterator<BSONObject> {
 		}
 		special.put(name, value);
 		return this;
+	}
+	
+	/**
+	 * クエリ条件を保持するマップオブジェクトを取得します。
+	 * @return
+	 */
+	public BSONObject selector() {
+		if (this.selector == null) {
+			this.selector = new BasicBSONObject();
+		}
+		return this.selector;
 	}
 	
 	/**
